@@ -2,8 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🐰 跳一跳 - 微信版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>🐰 跳一跳 H5</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -14,17 +16,85 @@
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-user-drag: none;
         }
         body {
-            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            overscroll-behavior: none;
         }
         
-        /* 游戏画布 */
-        #gameCanvas {
+        /* 游戏容器 */
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        canvas {
             display: block;
             width: 100%;
             height: 100%;
+        }
+        
+        /* UI层 */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        /* 分数 */
+        #scoreDisplay {
+            position: absolute;
+            top: env(safe-area-inset-top, 20px);
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: clamp(40px, 12vw, 72px);
+            font-weight: 900;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 40px rgba(0,255,136,0.3);
+            z-index: 100;
+            font-family: 'Arial Black', sans-serif;
+            letter-spacing: -2px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #scoreDisplay.show {
+            opacity: 1;
+        }
+        
+        /* 蓄力指示器 */
+        #powerIndicator {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            max-width: 300px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        #powerIndicator.show {
+            opacity: 1;
+        }
+        
+        #powerBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff88, #00b4db, #ff6b6b);
+            border-radius: 4px;
+            transition: width 0.05s linear;
         }
         
         /* 开始界面 */
@@ -38,58 +108,80 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(180deg, #0f0c29 0%, #302b63 100%);
+            z-index: 200;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        
+        #startScreen.hidden {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+        
+        .logo-container {
+            position: relative;
+            margin-bottom: 30px;
         }
         
         .logo {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: bounce 2s infinite;
+            font-size: clamp(60px, 20vw, 100px);
+            animation: bounce 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 10px 30px rgba(0,255,136,0.4));
         }
         
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+            0%, 100% { transform: translateY(0) scale(1); }
+            30% { transform: translateY(-15px) scale(1.05); }
+            50% { transform: translateY(0) scale(0.95); }
+            70% { transform: translateY(-5px) scale(1.02); }
         }
         
         .title {
             color: #fff;
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: clamp(24px, 8vw, 36px);
+            font-weight: 900;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 20px rgba(0,255,136,0.5);
+            letter-spacing: 2px;
         }
         
         .subtitle {
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
-            margin-bottom: 60px;
+            color: rgba(255,255,255,0.5);
+            font-size: clamp(12px, 4vw, 16px);
+            margin-bottom: 50px;
         }
         
         .start-btn {
-            width: 200px;
-            height: 50px;
-            background: linear-gradient(135deg, #07c160, #06ad56);
+            width: clamp(180px, 60vw, 240px);
+            height: clamp(50px, 15vw, 60px);
+            background: linear-gradient(135deg, #00ff88, #00b4db);
             border: none;
-            border-radius: 25px;
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 30px;
+            color: #0f0c29;
+            font-size: clamp(16px, 5vw, 20px);
+            font-weight: 900;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(7,193,96,0.4);
+            box-shadow: 0 8px 30px rgba(0,255,136,0.4), 0 0 60px rgba(0,255,136,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        /* 分数显示 */
-        #scoreDisplay {
-            position: absolute;
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #fff;
-            font-size: 60px;
+        .start-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 4px 15px rgba(0,255,136,0.4);
+        }
+        
+        .best-score {
+            margin-top: 30px;
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+        }
+        
+        .best-score span {
+            color: #ffd700;
             font-weight: bold;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            z-index: 100;
-            display: none;
         }
         
         /* 结束界面 */
@@ -99,137 +191,249 @@
             left: 0;
             right: 0;
             bottom: 0;
-            display: none;
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.8);
+            background: rgba(15,12,41,0.95);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        #endScreen.show {
+            opacity: 1;
+            pointer-events: auto;
         }
         
         .end-score {
-            color: #07c160;
-            font-size: 50px;
-            font-weight: bold;
+            font-size: clamp(50px, 18vw, 80px);
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 40px rgba(255,215,0,0.5);
             margin-bottom: 10px;
         }
         
         .end-title {
             color: #fff;
-            font-size: 24px;
+            font-size: clamp(18px, 6vw, 28px);
             margin-bottom: 40px;
         }
         
         .btn-group {
             display: flex;
-            gap: 20px;
+            gap: 15px;
         }
         
         .restart-btn {
-            width: 140px;
-            height: 45px;
-            background: #07c160;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #00ff88, #00b4db);
             border: none;
-            border-radius: 22px;
-            color: #fff;
+            border-radius: 25px;
+            color: #0f0c29;
             font-size: 16px;
             font-weight: bold;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .share-btn {
-            width: 140px;
-            height: 45px;
-            background: #fff;
-            border: none;
-            border-radius: 22px;
-            color: #1a1a2e;
+            padding: 15px 40px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 25px;
+            color: #fff;
             font-size: 16px;
             font-weight: bold;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        /* 音效按钮 */
-        .sound-btn {
+        /* 特效 */
+        .particle {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.2);
-            border: none;
+            pointer-events: none;
             border-radius: 50%;
-            font-size: 20px;
-            z-index: 101;
+            animation: particleFade 1s forwards;
+        }
+        
+        @keyframes particleFade {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        /* 连击提示 */
+        .combo-text {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.8);
+            animation: comboAnim 0.8s forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes comboAnim {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
+        
+        /* 提示文字 */
+        .tip-text {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            white-space: nowrap;
+            animation: tipPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes tipPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+        
+        .tip-text.hidden {
             display: none;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    
-    <div id="scoreDisplay">0</div>
-    <button class="sound-btn" id="soundBtn">🔊</button>
-    
-    <div id="startScreen">
-        <div class="logo">🐰</div>
-        <div class="title">跳一跳</div>
-        <div class="subtitle">按住屏幕蓄力，松开跳跃</div>
-        <button class="start-btn" onclick="startGame()">开始游戏</button>
-    </div>
-    
-    <div id="endScreen">
-        <div class="end-score" id="finalScore">0</div>
-        <div class="end-title" id="endTitle">完美!</div>
-        <div class="btn-group">
-            <button class="restart-btn" onclick="restartGame()">再玩一次</button>
-            <button class="share-btn" onclick="shareScore()">炫耀一下</button>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="ui-layer">
+            <div id="scoreDisplay">0</div>
+            <div id="powerIndicator">
+                <div id="powerBar"></div>
+            </div>
+            <div class="tip-text" id="tipText">按住蓄力，松开跳跃</div>
+        </div>
+        
+        <div id="startScreen">
+            <div class="logo-container">
+                <div class="logo">🐰</div>
+            </div>
+            <div class="title">跳一跳</div>
+            <div class="subtitle">按住蓄力 · 松开跳跃</div>
+            <button class="start-btn" id="startBtn">开始游戏</button>
+            <div class="best-score">历史最高: <span id="bestScore">0</span></div>
+        </div>
+        
+        <div id="endScreen">
+            <div class="end-score" id="finalScore">0</div>
+            <div class="end-title" id="endTitle">不错!</div>
+            <div class="btn-group">
+                <button class="restart-btn" id="restartBtn">再玩一次</button>
+                <button class="share-btn" id="shareBtn">炫耀一下</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // 游戏配置
+        const CONFIG = {
+            playerRadius: 20,
+            playerColor: '#00ff88',
+            gravity: 0.4,
+            maxPower: 18,
+            minPower: 6,
+            platformMinWidth: 50,
+            platformMaxWidth: 90,
+            platformMinDist: 80,
+            platformMaxDist: 180,
+            colors: ['#00ff88', '#00b4db', '#ff6b6b', '#ffd700', '#a55eea', '#ff8c00']
+        };
         
-        // 适配屏幕
+        // 游戏状态
+        let canvas, ctx;
+        let gameState = 'start'; // start, playing, ended
+        let score = 0;
+        let highScore = localStorage.getItem('jumpHighScore') || 0;
+        let player = { x: 0, y: 0, vx: 0, vy: 0, radius: CONFIG.playerRadius };
+        let platforms = [];
+        let power = 0;
+        let isPressing = false;
+        let powerDir = 1;
+        let combo = 0;
+        let lastPlatformIndex = 0;
+        
+        // 初始化
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // 触摸事件
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            
+            // 鼠标事件（PC调试）
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouse // 按钮事件
+            document.getUp);
+            
+           ElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('restartBtn').addEventListener('click', startGame);
+            document.getElementById('shareBtn').addEventListener('click', shareScore);
+            
+            // 显示最高分
+            document.getElementById('bestScore').textContent = highScore;
+            
+            // 初始绘制
+            drawBackground();
+        }
+        
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            if (gameState === 'playing') {
+                draw();
+            }
         }
-        resize();
-        window.addEventListener('resize', resize);
         
-        // 游戏状态
-        let gameRunning = false;
-        let score = 0;
-        let highScore = 0;
+        // 游戏控制
+        function startGame() {
+            gameState = 'playing';
+            score = 0;
+            combo = 0;
+            power = 0;
+            isPressing = false;
+            
+            // 隐藏UI
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.remove('show');
+            document.getElementById('scoreDisplay').classList.add('show');
+            document.getElementById('powerIndicator').classList.add('show');
+            document.getElementById('tipText').classList.remove('hidden');
+            
+            updateScore();
+            
+            // 初始化平台
+            initPlatforms();
+            
+            // 玩家位置
+            player.x = platforms[0].x;
+            player.y = platforms[0].y - player.radius;
+            player.vx = 0;
+            player.vy = 0;
+            
+            // 开始游戏循环
+            gameLoop();
+        }
         
-        // 玩家
-        const player = {
-            x: 0,
-            y: 0,
-            radius: 20,
-            color: '#07c160',
-            vx: 0,
-            vy: 0,
-            isJumping: false,
-            power: 0,
-            maxPower: 100
-        };
-        
-        // 平台
-        let platforms = [];
-        
-        // 蓄力相关
-        let isPressing = false;
-        let power = 0;
-        let powerDirection = 1;
-        
-        // 平台样式
-        const platformColors = ['#07c160', '#1a1a2e', '#e74c3c', '#3498db', '#9b59b6', '#f39c12'];
-        
-        // 初始化平台
         function initPlatforms() {
             platforms = [];
             const startX = canvas.width / 2;
-            const startY = canvas.height - 200;
+            const startY = canvas.height - 150;
             
             // 起始平台
             platforms.push({
@@ -237,73 +441,193 @@
                 y: startY,
                 width: 80,
                 height: 15,
-                color: '#07c160'
+                color: CONFIG.playerColor,
+                isStart: true
             });
             
-            // 生成后续平台
-            for (let i = 0; i < 10; i++) {
+            // 生成更多平台
+            for (let i = 0; i < 15; i++) {
                 addPlatform();
             }
         }
         
         function addPlatform() {
             const last = platforms[platforms.length - 1];
-            const minDist = 80;
-            const maxDist = 200;
-            const dist = minDist + Math.random() * (maxDist - minDist);
-            
-            // 随机角度（左右）
-            const angle = (Math.random() - 0.5) * Math.PI * 0.6;
+            const dist = CONFIG.platformMinDist + Math.random() * (CONFIG.platformMaxDist - CONFIG.platformMinDist);
+            const angle = (Math.random() - 0.5) * Math.PI * 0.5;
             
             const newX = last.x + Math.sin(angle) * dist;
-            const newY = last.y - Math.cos(angle) * dist * 0.8;
+            const newY = last.y - Math.cos(angle) * dist * 0.7;
             
             platforms.push({
-                x: newX,
-                y: newY,
-                width: 40 + Math.random() * 50,
+                x: Math.max(50, Math.min(canvas.width - 50, newX)),
+                y: Math.max(100, Math.min(canvas.height - 100, newY)),
+                width: CONFIG.platformMinWidth + Math.random() * (CONFIG.platformMaxWidth - CONFIG.platformMinWidth),
                 height: 15,
-                color: platformColors[Math.floor(Math.random() * platformColors.length)]
+                color: CONFIG.colors[Math.floor(Math.random() * CONFIG.colors.length)]
             });
         }
         
-        // 绘制
+        // 输入处理
+        function handleTouchStart(e) {
+            e.preventDefault();
+            if (gameState !== 'playing' || player.vy !== 0) return;
+            
+            isPressing = true;
+            power = 0;
+            powerDir = 1;
+            document.getElementById('tipText').classList.add('hidden');
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            if (!isPressing) return;
+            
+            isPressing = false;
+            if (gameState === 'playing' && player.vy === 0) {
+                jump();
+            }
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+        }
+        
+        function handleMouseDown(e) {
+            handleTouchStart(e);
+        }
+        
+        function handleMouseUp(e) {
+            handleTouchEnd(e);
+        }
+        
+        // 跳跃
+        function jump() {
+            const force = CONFIG.minPower + (power / 100) * (CONFIG.maxPower - CONFIG.minPower);
+            player.vy = -force;
+            player.vx = (Math.random() - 0.5) * 2;
+            
+            playSound('jump');
+        }
+        
+        // 游戏循环
+        function gameLoop() {
+            if (gameState !== 'playing') return;
+            
+            update();
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function update() {
+            // 更新蓄力
+            if (isPressing && player.vy === 0) {
+                power += 2 * powerDir;
+                if (power >= 100) {
+                    power = 100;
+                    powerDir = -1;
+                } else if (power <= 0) {
+                    power = 0;
+                    powerDir = 1;
+                }
+                document.getElementById('powerBar').style.width = power + '%';
+            }
+            
+            // 更新玩家
+            if (player.vy !== 0 || player.vx !== 0) {
+                player.x += player.vx;
+                player.y += player.vy;
+                player.vy += CONFIG.gravity;
+                
+                // 平台碰撞检测
+                checkPlatformCollision();
+                
+                // 边界检测
+                if (player.x < player.radius) {
+                    player.x = player.radius;
+                    player.vx *= -0.5;
+                }
+                if (player.x > canvas.width - player.radius) {
+                    player.x = canvas.width - player.radius;
+                    player.vx *= -0.5;
+                }
+                
+                // 掉落检测
+                if (player.y > canvas.height + 100) {
+                    gameOver();
+                }
+            }
+            
+            // 相机跟随
+            if (player.y < canvas.height * 0.4) {
+                const diff = canvas.height * 0.4 - player.y;
+                platforms.forEach(p => p.y += diff);
+                player.y = canvas.height * 0.4;
+                
+                // 添加新平台
+                while (platforms[platforms.length - 1].y > 0) {
+                    addPlatform();
+                }
+            }
+        }
+        
+        function checkPlatformCollision() {
+            if (player.vy <= 0) return;
+            
+            for (let i = 0; i < platforms.length; i++) {
+                const p = platforms[i];
+                if (player.vy > 0 &&
+                    player.y + player.radius >= p.y - p.height/2 &&
+                    player.y + player.radius <= p.y + p.height/2 + 15 &&
+                    player.x >= p.x - p.width/2 - player.radius &&
+                    player.x <= p.x + p.width/2 + player.radius) {
+                    
+                    // 成功落地
+                    player.y = p.y - player.radius;
+                    player.vy = 0;
+                    player.vx = 0;
+                    
+                    // 加分
+                    if (i > lastPlatformIndex) {
+                        combo++;
+                        const points = 10 * Math.min(combo, 5);
+                        score += points;
+                        updateScore();
+                        
+                        if (combo > 1) {
+                            showCombo(combo);
+                        }
+                        
+                        createParticles(player.x, player.y + player.radius, p.color);
+                        playSound('land');
+                        
+                        lastPlatformIndex = i;
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
         function draw() {
-            // 清空
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 背景
+            drawBackground();
             
-            // 绘制网格背景
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x < canvas.width; x += 30) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            for (let y = 0; y < canvas.height; y += 30) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-            
-            // 绘制平台
+            // 平台
             platforms.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.shadowColor = p.color;
                 ctx.shadowBlur = 15;
                 ctx.beginPath();
-                ctx.roundRect(p.x - p.width/2, p.y - p.height/2, p.width, p.height, 5);
+                ctx.roundRect(p.x - p.width/2, p.y - p.height/2, p.width, p.height, 8);
                 ctx.fill();
-                ctx.shadowBlur = 0;
             });
             
-            // 绘制玩家
-            ctx.fillStyle = player.color;
-            ctx.shadowColor = player.color;
-            ctx.shadowBlur = 20;
+            // 玩家
+            ctx.fillStyle = CONFIG.playerColor;
+            ctx.shadowColor = CONFIG.playerColor;
+            ctx.shadowBlur = 25;
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
@@ -313,155 +637,103 @@
             ctx.arc(player.x - 8, player.y - 15, 8, 0, Math.PI * 2);
             ctx.arc(player.x + 8, player.y - 15, 8, 0, Math.PI * 2);
             ctx.fill();
+            
             ctx.shadowBlur = 0;
+        }
+        
+        function drawBackground() {
+            // 渐变背景
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#0f0c29');
+            gradient.addColorStop(0.5, '#302b63');
+            gradient.addColorStop(1, '#24243e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // 绘制蓄力条
-            if (isPressing && !player.isJumping) {
-                const barWidth = 60;
-                const barHeight = 8;
-                const barX = player.x - barWidth / 2;
-                const barY = player.y + 35;
-                
-                // 背景
-                ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.fillRect(barX, barY, barWidth, barHeight);
-                
-                // 进度
-                const gradient = ctx.createLinearGradient(barX, 0, barX + barWidth, 0);
-                gradient.addColorStop(0, '#07c160');
-                gradient.addColorStop(1, '#e74c3c');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(barX, barY, barWidth * (power / player.maxPower), barHeight);
+            // 星星
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 137) % canvas.width;
+                const y = (i * 97) % canvas.height;
+                const size = (i % 3) + 1;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
         
-        // 更新
-        function update() {
-            if (!gameRunning) return;
-            
-            // 蓄力
-            if (isPressing && !player.isJumping) {
-                power += 2 * powerDirection;
-                if (power >= player.maxPower) {
-                    power = player.maxPower;
-                    powerDirection = -1;
-                } else if (power <= 0) {
-                    power = 0;
-                    powerDirection = 1;
-                }
-            }
-            
-            // 跳跃
-            if (player.isJumping) {
-                player.x += player.vx;
-                player.y += player.vy;
-                player.vy += 0.5; // 重力
-                
-                // 碰撞检测
-                platforms.forEach(p => {
-                    if (player.vy > 0 && // 向下落
-                        player.y + player.radius >= p.y - p.height/2 &&
-                        player.y + player.radius <= p.y + p.height/2 + 10 &&
-                        player.x >= p.x - p.width/2 - player.radius &&
-                        player.x <= p.x + p.width/2 + player.radius) {
-                        
-                        // 成功落到平台
-                        player.isJumping = false;
-                        player.y = p.y - player.radius;
-                        player.vx = 0;
-                        player.vy = 0;
-                        
-                        // 加分
-                        const platformIndex = platforms.indexOf(p);
-                        score = platformIndex;
-                        updateScore();
-                        
-                        // 音效
-                        playSound('land');
-                        
-                        // 添加新平台
-                        if (platformIndex >= platforms.length - 5) {
-                            addPlatform();
-                        }
-                    }
-                });
-                
-                // 掉落检测
-                if (player.y > canvas.height + 100) {
-                    gameOver();
-                }
-            }
-            
-            draw();
-            requestAnimationFrame(update);
-        }
-        
-        // 开始跳跃
-        function jump() {
-            if (player.isJumping || !gameRunning) return;
-            
-            const angle = -Math.PI / 2; // 向上
-            const force = power / player.maxPower * 15 + 5;
-            
-            player.vx = Math.sin(angle) * force * 0.3;
-            player.vy = Math.cos(angle) * force;
-            player.isJumping = true;
-            
-            playSound('jump');
-        }
-        
-        // 更新分数
+        // UI更新
         function updateScore() {
             document.getElementById('scoreDisplay').textContent = score;
         }
         
-        // 开始游戏
-        function startGame() {
-            document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('scoreDisplay').style.display = 'block';
-            document.getElementById('soundBtn').style.display = 'block';
-            
-            score = 0;
-            updateScore();
-            
-            initPlatforms();
-            
-            // 玩家初始位置
-            const firstPlatform = platforms[0];
-            player.x = firstPlatform.x;
-            player.y = firstPlatform.y - player.radius;
-            player.isJumping = false;
-            power = 0;
-            
-            gameRunning = true;
-            update();
+        function showCombo(c) {
+            const text = document.createElement('div');
+            text.className = 'combo-text';
+            text.textContent = c + '连击!';
+            text.style.left = player.x + 'px';
+            text.style.top = (player.y - 50) + 'px';
+            document.getElementById('gameContainer').appendChild(text);
+            setTimeout(() => text.remove(), 800);
+        }
+        
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.width = '10px';
+                particle.style.height = '10px';
+                particle.style.background = color;
+                particle.style.boxShadow = `0 0 10px ${color}`;
+                document.getElementById('gameContainer').appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
         }
         
         // 游戏结束
         function gameOver() {
-            gameRunning = false;
+            gameState = 'ended';
+            
+            // 更新最高分
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('jumpHighScore', highScore);
+            }
             
             document.getElementById('finalScore').textContent = score;
-            document.getElementById('endTitle').textContent = score > 50 ? '大神!' : (score > 20 ? '厉害!' : '继续加油!');
-            document.getElementById('endScreen').style.display = 'flex';
-        }
-        
-        // 重新开始
-        function restartGame() {
-            document.getElementById('endScreen').style.display = 'none';
-            startGame();
+            
+            let title = '还不错!';
+            if (score >= 200) title = '大神! 🏆';
+            else if (score >= 100) title = '厉害!';
+            else if (score >= 50) title = '不错!';
+            else title = '继续加油!';
+            
+            document.getElementById('endTitle').textContent = title;
+            document.getElementById('endScreen').classList.add('show');
+            document.getElementById('powerIndicator').classList.remove('show');
+            
+            playSound('over');
         }
         
         // 分享
         function shareScore() {
-            alert('分享到微信: 跳一跳 - 我得了' + score + '分！');
+            const text = `🐰 跳一跳 - 我得了${score}分！`;
+            if (navigator.share) {
+                navigator.share({
+                    title: '跳一跳',
+                    text: text
+                }).catch(() => {});
+            } else {
+                alert(text);
+            }
         }
         
-        // 音效（使用Web Audio API）
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
+        // 音效
         function playSound(type) {
             try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 
@@ -471,55 +743,24 @@
                 if (type === 'jump') {
                     osc.frequency.setValueAtTime(400, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-                } else {
+                } else if (type === 'land') {
                     osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+                } else {
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
                 }
                 
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
                 
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
+                osc.stop(audioCtx.currentTime + 0.15);
             } catch(e) {}
         }
         
-        // 触摸事件
-        document.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameRunning && !player.isJumping) {
-                isPressing = true;
-                power = 0;
-                powerDirection = 1;
-            }
-        });
-        
-        document.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (isPressing) {
-                isPressing = false;
-                jump();
-            }
-        });
-        
-        // 鼠标事件（PC调试用）
-        document.addEventListener('mousedown', (e) => {
-            if (gameRunning && !player.isJumping) {
-                isPressing = true;
-                power = 0;
-                powerDirection = 1;
-            }
-        });
-        
-        document.addEventListener('mouseup', (e) => {
-            if (isPressing) {
-                isPressing = false;
-                jump();
-            }
-        });
-        
-        // 初始绘制
-        draw();
+        // 启动
+        init();
     </script>
 </body>
 </html>

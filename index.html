@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎮 微信小游戏合集</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 30px 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .title {
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+        }
+        
+        .games-grid {
+            max-width: 600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        
+        .game-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,255,136,0.2);
+            border-color: #00ff88;
+        }
+        
+        .game-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        
+        .game-name {
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .game-desc {
+            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="title">微信小游戏合集</div>
+        <div class="subtitle">随时随地，打开即玩</div>
+    </div>
+    
+    <div class="games-grid">
+        <a href="jump/index.html" class="game-card" target="_blank">
+            <div class="game-icon">🐰</div>
+            <div class="game-name">跳一跳</div>
+            <div class="game-desc">按住蓄力，松开跳跃</div>
+        </a>
+        
+        <a href="2048/index.html" class="game-card" target="_blank">
+            <div class="game-icon">🎲</div>
+            <div class="game-name">2048</div>
+            <div class="game-desc">经典数字合成游戏</div>
+        </a>
+        
+        <a href="match/index.html" class="game-card" target="_blank">
+            <div class="game-icon">🧁</div>
+            <div class="game-name">消消乐</div>
+            <div class="game-desc">糖果消除闯关</div>
+        </a>
+        
+        <!-- 更多游戏 Coming Soon -->
+        <div class="game-card" style="opacity: 0.5; cursor: default;">
+            <div class="game-icon">🚧</div>
+            <div class="game-name">敬请期待</div>
+            <div class="game-desc">更多游戏开发中</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>持续更新中... 🚀</p>
+    </div>
+</body>
+</html>
